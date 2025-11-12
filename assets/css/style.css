@@ -1553,7 +1553,7 @@ a:hover {
 
 .progess_box{
 box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
-    padding: 10px 20px;
+    padding: 10px 20px 20px;
     border-radius: 20px;
 }
 .target_count h3{
@@ -1570,6 +1570,7 @@ box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
 }
 #totalTable{
   margin: 10px 0px;
+  display: none;
 }
 
 #totalTable tbody, td, tfoot, th, thead, tr{
@@ -1588,7 +1589,10 @@ box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
       padding: 10px 10px;
       border-radius: 10px;
       text-align: center;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+      /* box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1); */
+      height: 258px;
+      justify-content: center;
+      margin: 2px;
     }
 
     .owl-nav button {
@@ -1663,7 +1667,11 @@ box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
     padding: 5px 10px !important;
     font-size: 14px;
     color: #333;
-    height: 73px;
+    height: 43px;
+}
+.candidate_carousel{
+  margin: -1px;
+  padding: 0px;
 }
 
 .partyTrends tr:not(:last-child) td {
@@ -1724,7 +1732,16 @@ box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
     white-space: nowrap;
 } */
 
+.totalCount {
+    display: flex;
+    justify-content: space-between;
+    margin: 2px 0px;
+}
 
+
+.totalCount h4{
+  font-size: 18px;
+}
 
 
 
