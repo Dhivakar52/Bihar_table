@@ -5,13 +5,13 @@ $(function() {
 
 
 
-    var tableUrl= 'https://script.google.com/macros/s/AKfycbyX0k-WBU-Nlv70_zg0c9PxqzDboCSnUisNlXK9x4FWksQtaXdM-ghFq_auSH6lgiaO/exec';
-    var total_vote= 'https://script.google.com/macros/s/AKfycbzuFSAGFh34EgLiKqRtAURY4ybFkrtMmbG84SGUfxwI7ulomEc_CPsD_iVTK-UVBMyc/exec';
+    var tableUrl= 'https://script.google.com/macros/s/AKfycbzsvX-nNDvYtOOqavidBCw34ApYDfbcMjla_gFmSRXGacpDRphmVGbRHJDRRtmvlE7D/exec';
+    // var total_vote= 'https://script.google.com/macros/s/AKfycbzsvX-nNDvYtOOqavidBCw34ApYDfbcMjla_gFmSRXGacpDRphmVGbRHJDRRtmvlE7D/exec';
     // var candidate_url= 'https://script.google.com/macros/s/AKfycbyLic1WRfB1Okzlrqia1mOQVmxtQ2gPK4pWg6REc-oh8qF--_vrcYqj65XKjKpUNIyz/exec';
     var candidate_url= 'https://script.google.com/macros/s/AKfycby_XDmVGRN8E8FwQgqACCCvxI1DPWDdVqmJ-vBEkabUgyzuNeaRuwTFZz3E5bCSWaLv/exec';
     var party_trends= 'https://script.google.com/macros/s/AKfycbx1F-TDnZk_rsjUmPO_3LXUnPhkPKYO94BHnCZpxIkRS63NeksprMxdxi0JRsA_O7AC/exec';
 
-
+ 
 
 
 
@@ -49,22 +49,24 @@ $(function() {
 
 async function bihar_table() {
   try {
-    const [res1, res2, res3] = await Promise.allSettled([
+    const [res1, res3] = await Promise.allSettled([
       fetch(tableUrl),
-      fetch(total_vote),
+      // fetch(total_vote),
     
       fetch(party_trends)
     ]);
 
     if (res1.status === "fulfilled") {
       const data = await res1.value.json();
+      console.log(data)
       setProgressData(data);
     }
 
-    if (res2.status === "fulfilled") {
-      const data1 = await res2.value.json();
-      setTotalData(data1);
-    }
+    // if (res2.status === "fulfilled") {
+    //   const data1 = await res2.value.json();
+    //   setTotalData(data1);
+  
+    // }
     if (res3.status === "fulfilled") {
       const data3 = await res3.value.json();
       setPartyTable(data3);
@@ -105,67 +107,115 @@ async function bihar_carousel() {
 
 
 function setProgressData(data) {
-    let html = '';
-    const maxCount = 243;
-    const targetPercent = 50; // 50% for center position
+  let html = '';
+  const maxCount = 243;
+  const targetPercent = 50;
 
-    data.forEach(item => {
-        const progress = Math.round((item.Count / maxCount) * 100);
+  data.forEach((item, index) => {
+    const baseName = item.Party.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-]/g, '');
+    const partyLogo = `${baseName}.png`;
 
-        const baseName = item.Party.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-]/g, '');
-        const partyLogo = `${baseName}.png`;
+    let color;
+    switch (item.Party.toUpperCase()) {
+      case 'NDA+':
+        color = '#f7941c';
+        break;
+      case 'MGB+':
+      case 'JDU':
+        color = '#1e7b1e';
+        break;
+      default:
+        color = '#999999';
+    }
 
-        let color;
-        switch (item.Party.toUpperCase()) {
-            case 'BJP':
-                color = '#f7941c';
-                break;
-            case 'JDU':
-                color = '#1e7b1e';
-                break;
-            case 'CPI':
-                color = '#de0000';
-                break;
-            default:
-                color = '#999999'; 
+    const candidateName = item.Name ? item.Name.toLowerCase().replace(/\s+/g, '-') : 'unknown';
+
+    html += `
+      <div class="row align-items-end mb-1" id="candidate-${index}">
+        <div class="col-2">
+          <div class="logoPos">
+            <div class="logoImg">
+              <img src="assets/images/party_logo/${partyLogo}" class="img-fluid" alt="${item.Party}">
+            </div>
+            <p>${item.Party}</p>
+          </div>
+        </div>
+
+        <div class="col-8 position-relative">
+          <!-- Target Line -->
+          <div class="target-line" style="left: ${targetPercent}%;"> </div>
+
+          <!-- Candidate GIF -->
+          <img id="runner-${index}" 
+               src="assets/images/${candidateName}-walk.gif" 
+               class="img-fluid imgWidth running-gif"
+               style="left: 0%;" 
+               alt="${item.Name}">
+
+          <!-- Progress Bar -->
+          <div class="progress">
+            <div id="bar-${index}" 
+                 class="progress-bar progress-bar-striped progress-bar-animated" 
+                 style="width: 0%; background-color: ${color};"></div>
+          </div>
+        </div>
+
+        <div class="col-2">
+          <p id="count-${index}">0</p>
+        </div>
+      </div>
+    `;
+  });
+
+  document.getElementById('progressTable').innerHTML = html;
+
+  // Animate the bar dynamically
+  data.forEach((item, index) => {
+    const progressBar = document.getElementById(`bar-${index}`);
+    const runnerImg = document.getElementById(`runner-${index}`);
+    const countDisplay = document.getElementById(`count-${index}`);
+
+    const candidateName = item.Name ? item.Name.toLowerCase().replace(/\s+/g, '-') : 'unknown';
+    const finalProgress = Math.round((item.Count / maxCount) * 100);
+    const finalCount = item.Count;
+
+    let current = 0;
+    let hasStarted = false;
+    const stepDelay = 200; // animation speed
+
+    const interval = setInterval(() => {
+      if (current < finalProgress) {
+        current++;
+
+        // when progress starts moving → switch to run.gif
+        if (!hasStarted) {
+          hasStarted = true;
+          runnerImg.src = `assets/images/${candidateName}-Run.gif`;
         }
 
-        html += `
-        
-        <div class="row align-items-end mb-1">
-            <div class="col-2">
-                <div class="logoPos"> 
-                    <div class="logoImg">
-                        <img src="assets/images/party_logo/${partyLogo}" class="img-fluid" alt="${item.Party}">
-                    </div>
-                    <p>${item.Party}</p>
-                </div>
-            </div>
+        progressBar.style.width = `${current}%`;
+        runnerImg.style.left = `calc(${current}% - 5%)`;
+        countDisplay.textContent = Math.round((current / 100) * maxCount);
+      } else {
+        clearInterval(interval);
 
-            <div class="col-8 position-relative">
-                <!-- Target Line -->
-                <div class="target-line" style="left: ${targetPercent}%;"> </div>
-                
-                <!-- Running GIF -->
-                <img src="assets/images/run.gif" class="img-fluid imgWidth running-gif" 
-                     style="left: calc(${progress}% - 5%);" alt="">
-                
-                <!-- Progress Bar -->
-                <div class="progress">
-                    <div class="progress-bar progress-bar-striped progress-bar-animated" 
-                         style="width: ${progress}%; background-color: ${color};"></div>
-                </div>
-            </div>
+        // stop movement → back to walk.gif
+        runnerImg.src = `assets/images/${candidateName}-Walk.gif`;
+        countDisplay.textContent = finalCount;
 
-            <div class="col-2">
-                <p>${item.Count}</p>
-            </div>
-        </div>
-        `;
-    });
-
-    document.getElementById('progressTable').innerHTML = html;
+        // win or lose condition
+        if (finalProgress >= 90 && item.Party === 'NDA+') {
+          runnerImg.src = `assets/images/${candidateName}-Win.gif`;
+        } else if (finalProgress >= 90 && item.Party !== 'NDA+') {
+          runnerImg.src = `assets/images/${candidateName}-Lose.gif`;
+        }
+      }
+    }, stepDelay);
+  });
 }
+
+
+
 
 
 
@@ -208,66 +258,48 @@ function setTotalData(data) {
 
 
 function setCandidateData(data) {
-  let html = '';
+  const html = data.map(item => {
+    const status = item.Status ? item.Status.toLowerCase() : '';
+    let statusImage = 'counting.png';
+    if (status === 'leading') statusImage = 'leading.png';
+    else if (status === 'trailing') statusImage = 'trailing.png';
+    else if (status === 'won') statusImage = 'won.png';
+    else if (status === 'lost') statusImage = 'lost.png';
 
-  for (let i = 0; i < data.length; i += 6) {
-    const chunk = data.slice(i, i + 6);
-
-    html += `
-      <div class="candidate_slide">
-        <div class="candidate_grid">
-          ${chunk.map(item => {
-            // Normalize the status safely
-            const status = item.Status ? item.Status.toLowerCase() : '';
-
-            // Determine which image to use
-            let statusImage = 'counting.png'; // default image
-
-            if (status === 'leading') statusImage = 'leading.png';
-            else if (status === 'trailing') statusImage = 'trailing.png';
-            else if (status === 'won') statusImage = 'won.png';
-            else if (status === 'lost') statusImage = 'lost.png';
-
-            return `
-              <div class="card">
-                <div class="candidate_image">
-                  <img src="assets/images/bihar_candidate/${item.Image.trim()}.png" class="img-fluid" alt="${item.CandidateName}">
-                </div>
-                <div class="candidate_details">
-                  <h4>${item.CandidateName}</h4>
-                  <p>${item.Party} - ${item.Constituency}</p>
-                  <img src="assets/images/${statusImage}" class="img-fluid status-${status || 'counting'}" alt="${item.Status || 'Counting'}">
-                </div>
-              </div>
-            `;
-          }).join('')}
+    return `
+      <div class="card">
+        <div class="candidate_image">
+          <img src="assets/images/bihar_candidate/${item.Image.trim()}.png" class="img-fluid" alt="${item.CandidateName}">
+        </div>
+        <div class="candidate_details">
+          <h4>${item.CandidateName}</h4>
+          <p>${item.Party} - ${item.Constituency}</p>
+          <img src="assets/images/${statusImage}" class="img-fluid status-${status || 'counting'}" alt="${item.Status || 'Counting'}">
         </div>
       </div>
     `;
-  }
+  }).join('');
 
   document.querySelector('.candidate_carousel').innerHTML = html;
 
-  // Destroy existing carousel before re-initializing
   $('.candidate_carousel').trigger('destroy.owl.carousel');
 
-  // Initialize Owl Carousel
   $('.candidate_carousel').owlCarousel({
     loop: true,
     margin: 20,
     nav: true,
     dots: false,
-    items: 1,
     autoplay: false,
     autoplayTimeout: 3000,
     autoplayHoverPause: true,
     responsive: {
-      0: { items: 1 },
+      0: { items: 2 },
       600: { items: 1 },
-      1000: { items: 1 }
+      1000: { items: 3 }
     }
   });
 }
+
 
 
 
@@ -306,9 +338,9 @@ function setPartyTable(data) {
 
 
 
-setInterval(() => {
-    bihar_table();
-}, 5000);
+// setInterval(() => {
+//     bihar_table();
+// }, 5000);
  bihar_table();
 // setInterval(bihar_carousel, 5000);
 
